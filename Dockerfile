@@ -24,7 +24,7 @@ maintainer 红薯 <winter.lau@163.com> \
       description="Kooder is an open source code search project" \
       homepage="https://gitee.com/koode/kooder.git"
 
-## 将应用发布到opt下
+## 将应用发布到opt下,将部署路径修改为/opt/kooder,
 ARG USER_HOME_DIR="/opt/kooder"
 
 WORKDIR ${USER_HOME_DIR}
@@ -36,7 +36,7 @@ COPY --from=build /root/lib ${USER_HOME_DIR}/lib
 COPY --from=build /root/kooder.properties ${USER_HOME_DIR}/kooder.properties
 COPY --from=build /root/gateway/target/classes ${USER_HOME_DIR}/gateway/target/classes
 ## 启动文件修改一下路径地址，不影响原代码
-RUN sed -i 's/root/opt\/kooder/g' ${USER_HOME_DIR}bin/gatewaydocker.sh
+RUN sed -i 's/root/opt\/kooder/g' ${USER_HOME_DIR}/bin/gatewaydocker.sh
 
 EXPOSE 8080
 
