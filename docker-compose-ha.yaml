@@ -13,7 +13,7 @@ services:
   haproxy:
     image: haproxy:1.6
     volumes:
-      - ./kooder.properties:/root/kooder.properties:ro
+      - ./kooder.properties:/opt/kooder/kooder.properties:ro
       - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
     links:
       - koodera
