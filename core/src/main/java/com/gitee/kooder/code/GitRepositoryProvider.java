@@ -67,8 +67,18 @@ public class GitRepositoryProvider implements RepositoryProvider {
     private final static SlocCounter slocCounter = new SlocCounter();
     private CredentialsProvider credentialsProvider;
     private TransportConfigCallback transportConfigCallback;
+    private String protocol = "http";
+
+    private static final String HTTPS = "https";
+
+    private static  final String REPO_SUFFIX = ".git";
 
     public GitRepositoryProvider() {
+        String gitUrl = KooderConfig.getProperty("gitlab.url");
+        if(gitUrl.startsWith(HTTPS)){
+            this.protocol = HTTPS;
+        }
+
         //http authenticator
         String username = KooderConfig.getProperty("git.username");
         String password = KooderConfig.getProperty("git.password");
@@ -77,6 +87,7 @@ public class GitRepositoryProvider implements RepositoryProvider {
             if(StringUtils.isBlank(password))
                 password = KooderConfig.getProperty("gitee.personal_access_token");
         }
+
         if(StringUtils.isNotBlank(username) && StringUtils.isNotBlank(password))
             this.credentialsProvider = new UsernamePasswordCredentialsProvider(username, password);
 
@@ -122,6 +133,14 @@ public class GitRepositoryProvider implements RepositoryProvider {
         Git git = null;
         try {
             long ct = System.currentTimeMillis();
+            // 修复部分gitlab域名与项目仓库地址协议不一致的问题
+            if(protocol.equals(HTTPS) && !repo.getUrl().startsWith(HTTPS)) {
+                repo.setUrl(repo.getUrl().replace("http", HTTPS));
+            }
+            // 修复部分仓库地址不以.git结尾导致301重定向的问题
+            if(!repo.getUrl().endsWith(REPO_SUFFIX)){
+                repo.setUrl(repo.getUrl() + REPO_SUFFIX);
+            }
             File repoFile = StorageFactory.getRepositoryPath(repo.getRelativePath()).toFile();
             log.info("Pulling code from {} to {}.", repo.getUrl(), repoFile.getPath());
             if (!repoFile.exists()) {//检查目录不存在就 clone
@@ -229,6 +248,7 @@ public class GitRepositoryProvider implements RepositoryProvider {
      * @throws GitAPIException
      */
     private Git justClone(String fromUrl, File toPath) throws GitAPIException {
+//        fromUrl = fromUrl.replace("https","http");
         CloneCommand cloneCommand = Git.cloneRepository()
                 .setURI(fromUrl)
                 .setDirectory(toPath)
