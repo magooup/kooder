@@ -248,7 +248,6 @@ public class GitRepositoryProvider implements RepositoryProvider {
      * @throws GitAPIException
      */
     private Git justClone(String fromUrl, File toPath) throws GitAPIException {
-//        fromUrl = fromUrl.replace("https","http");
         CloneCommand cloneCommand = Git.cloneRepository()
                 .setURI(fromUrl)
                 .setDirectory(toPath)
