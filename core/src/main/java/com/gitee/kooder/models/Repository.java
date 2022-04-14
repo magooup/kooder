@@ -70,6 +70,10 @@ public final class Repository extends Searchable {
         if(p.getOwner() != null)
             this.owner = new Relation(p.getOwner().getId(), p.getOwner().getName(), p.getOwner().getWebUrl());
         this.setVisibility(p.getVisibility());
+        // 修复部分版本接口不返回visibility但返回level的问题
+        if(p.getVisibility() == null && p.getVisibilityLevel() != null){
+            this.setVisibility(p.getVisibilityLevel());
+        }
         if(p.getLicense() != null)
             this.setLicense(p.getLicense().getName());
         this.setLang(null);// 编程语言如何获取
