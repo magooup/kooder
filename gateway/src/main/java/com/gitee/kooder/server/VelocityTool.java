@@ -39,6 +39,8 @@ import java.util.List;
  */
 public class VelocityTool {
 
+    private static final String WEB_ROOT_PATH_KEY = "webroot";
+
     private RoutingContext context;
 
     public VelocityTool(RoutingContext context) {
@@ -57,7 +59,9 @@ public class VelocityTool {
     public String static_with_timestamp(String uri) {
         StringBuffer url = new StringBuffer();
         url.append(uri);
-        Path path = KooderConfig.getPath("gateway/src/main/webapp/" + uri);
+        String webRootPath =
+                KooderConfig.getHttpProperties().getProperty(WEB_ROOT_PATH_KEY, "gateway/src/main/webapp");
+        Path path = KooderConfig.getPath(webRootPath + "/" + uri);
         if(Files.exists(path)) {
             try {
                 url.append("?timestamp=");
