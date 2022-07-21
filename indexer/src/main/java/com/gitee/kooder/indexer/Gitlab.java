@@ -49,6 +49,7 @@ public class Gitlab {
         int connectTimeout = NumberUtils.toInt(KooderConfig.getProperty("gitlab.connect_timeout"), 2000);
         int readTimeout = NumberUtils.toInt(KooderConfig.getProperty("gitlab.read_timeout"), 10000);
         INSTANCE.setRequestTimeout(connectTimeout, readTimeout);
+        INSTANCE.setIgnoreCertificateErrors(true);
     }
 
 }
