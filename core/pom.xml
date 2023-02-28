@@ -17,7 +17,7 @@
 
     <properties>
         <lucene.version>8.8.2</lucene.version>
-        <jackson.version>2.11.3</jackson.version>
+        <jackson.version>2.13.4</jackson.version>
         <jcseg.version>2.6.2</jcseg.version>
         <okhttp.version>4.9.0</okhttp.version>
         <icu4j.version>69.1</icu4j.version>
