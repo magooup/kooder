@@ -62,7 +62,12 @@ public final class Repository extends Searchable {
 
     public Repository(Project p) {
         this.id = p.getId();
-        this.name = p.getName();
+        if(StringUtils.isNotBlank(p.getNameWithNamespace())) {
+            // Gitlab 支持仓库重名和fork
+            this.name = p.getNameWithNamespace().replaceAll(" ","");
+        } else {
+            this.name = p.getName();
+        }
         this.description = p.getDescription();
         this.url = p.getHttpUrlToRepo();
         //this.enterprise = Relation.EMPTY();

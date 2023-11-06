@@ -55,7 +55,7 @@ public class CodeFileTraveler implements FileTraveler {
         try {
             Document doc = buildFacetDocument(codeid.getDocument());
             writer.updateDocument(new Term(Constants.FIELD_UUID, codeid.getUuid()), doc);
-        } catch (IllegalArgumentException | IOException e) {
+        } catch (Throwable e) {
             log.error("Failed to update ducment<code>: file:" + codeid.getName() + " in repo:" + codeid.getRepository().getName(), e);
         }
     }
@@ -71,7 +71,7 @@ public class CodeFileTraveler implements FileTraveler {
         //log.info("deleteDocument:" + codeid);
         try {
             writer.deleteDocuments(new Term(Constants.FIELD_UUID, codeid.getUuid()));
-        } catch (IOException e) {
+        } catch (Throwable e) {
             log.error("Failed to delete ducment<code> with uuid = " + codeid.getUuid(), e);
         }
     }
@@ -86,7 +86,7 @@ public class CodeFileTraveler implements FileTraveler {
         //log.info("resetRepository:" + repoId);
         try {
             writer.deleteDocuments(NumericDocValuesField.newSlowExactQuery(Constants.FIELD_REPO_ID, repoId));
-        } catch (IOException e) {
+        } catch (Throwable e) {
             log.error("Failed to reset repository with id = " + repoId, e);
         }
     }

@@ -140,7 +140,9 @@ public class SearchHelper {
         List<String> keys = SetUniqueList.decorate(AnalyzerFactory.getCodeAnalyzer().tokens(searchKey));
         Pattern pattern = Pattern.compile(keys.stream().map(k -> escapeSpecialRegexChars(k)).collect(Collectors.joining("|")));
 
-        String[] lines = StringUtils.split(code, "\r\n");
+        // String[] lines = StringUtils.split(code, "\r\n");
+        // 修复行号不正确问题
+        String[] lines = code.split("\\r\\n|\\n");
         for (int i = 0; i < lines.length && codeLines.size() < maxLines; i++) {
             if (StringUtils.isEmpty(lines[i]) || lines[i].length() < searchKey.length())
                 continue;
@@ -162,6 +164,12 @@ public class SearchHelper {
         return codeLines;
     }
 
+
+    public static void main(String[] args) {
+        System.out.println(SetUniqueList.decorate(AnalyzerFactory.getCodeAnalyzer().tokens("authService.updateUserProfile")));
+    }
+
+
     /**
      * 格式化HTML文本
      *
@@ -175,7 +183,7 @@ public class SearchHelper {
         return content;
     }
 
-    private final static Pattern SPECIAL_REGEX_CHARS = Pattern.compile("[{}()\\[\\].+*?^$\\\\|]");
+    private final static Pattern SPECIAL_REGEX_CHARS = Pattern.compile("[\\{\\}\\(\\)\\[\\]\\.\\+\\*\\?\\^\\$\\|]");
     public static String escapeSpecialRegexChars(String str) {
         return SPECIAL_REGEX_CHARS.matcher(str).replaceAll("\\\\$0");
     }

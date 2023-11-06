@@ -27,6 +27,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.index.IndexWriter;
 import org.eclipse.jgit.annotations.NonNull;
@@ -72,6 +73,7 @@ public class GitRepositoryProvider implements RepositoryProvider {
     private static final String HTTPS = "https";
 
     private static  final String REPO_SUFFIX = ".git";
+
 
     public GitRepositoryProvider() {
         String gitUrl = KooderConfig.getProperty("gitlab.url");
@@ -193,8 +195,9 @@ public class GitRepositoryProvider implements RepositoryProvider {
 
             if (needRebuildIndexes) {
                 long cti = System.currentTimeMillis();
-                if (traveler != null)
+                if (traveler != null) {
                     traveler.resetRepository(repo.getId());
+                }
                 //上一次保持的 commit id 已经失效，可能是强推导致，需要重建仓库索引
                 int fc = this.indexAllFiles(repo, git, traveler);
                 log.info("Rebuilding '{}<{}>' {} indexes in {}ms", repo.getName(), repo.getId(), fc, System.currentTimeMillis() - cti);
@@ -214,8 +217,12 @@ public class GitRepositoryProvider implements RepositoryProvider {
                         doc.setEnterprise(repo.getEnterprise());
                         traveler.deleteDocument(doc);
                     } else {
-                        addFileToDocument(repo, git, entry.getNewPath(), entry.getNewId().toObjectId(), traveler);
-                        fileCount++;
+                        try {
+                            addFileToDocument(repo, git, entry.getNewPath(), entry.getNewId().toObjectId(), traveler);
+                            fileCount++;
+                        } catch (Throwable e) {
+                            log.error("Failed to add file {} to repository {}", entry.getNewPath(), repo.getName(), e);
+                        }
                     }
                 }
             }
@@ -277,9 +284,14 @@ public class GitRepositoryProvider implements RepositoryProvider {
                 treeWalk.setRecursive(true);
                 while(treeWalk.next()) {
                     long ct = System.currentTimeMillis();
-                    addFileToDocument(repo, git, treeWalk.getPathString(), treeWalk.getObjectId(0), traveler);
-                    log.debug("add file:{} to index in {}ms.", treeWalk.getPathString(), (System.currentTimeMillis()-ct));
-                    fileCount ++;
+                    String path = treeWalk.getPathString();
+                    try {
+                        addFileToDocument(repo, git, path, treeWalk.getObjectId(0), traveler);
+                        log.debug("add file:{} to index in {}ms.", path, (System.currentTimeMillis()-ct));
+                        fileCount ++;
+                    } catch (Throwable e){
+                        log.error("Failed to add file {} to repository {} from indexAllFiles", path, repo.getName(), e);
+                    }
                 }
             }
         }
@@ -366,7 +378,7 @@ public class GitRepositoryProvider implements RepositoryProvider {
         try {
             ObjectLoader loader = git.getRepository().open(objectId);
             try (InputStream stream = loader.openStream()) {
-                List<String> codeLines = TextFileUtils.readFileLines(stream, 20000);
+                List<String> codeLines = TextFileUtils.readFileLines(stream, -1);
                 String contents = String.join("\n", codeLines);
 
                 SourceFile doc = new SourceFile(repo.getVender());

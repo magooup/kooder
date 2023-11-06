@@ -15,21 +15,27 @@
  */
 package com.gitee.kooder.models;
 
+import static com.gitee.kooder.utils.SourceFieldUtils.getSourceFieldName;
+import static com.gitee.kooder.utils.SourceFieldUtils.getSourceFieldNumber;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.gitee.kooder.code.CodeFileTraveler;
 import com.gitee.kooder.core.Constants;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.lucene.document.*;
 
-import java.nio.charset.StandardCharsets;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Source File Object
  * @author Winter Lau<javayou@gmail.com>
  */
 public final class SourceFile extends Searchable {
+    private final static Logger log = LoggerFactory.getLogger(CodeFileTraveler.class);
 
     private String vender;          // gitee,gitlab or gitea, using this field to indentify file url
     private String uuid;            // file unique identify
@@ -101,7 +107,14 @@ public final class SourceFile extends Searchable {
         this.name = doc.get(Constants.FIELD_FILE_NAME);
         this.url = doc.get(Constants.FIELD_URL);
         this.location = doc.get(Constants.FIELD_FILE_LOCATION);
-        this.contents = doc.get(Constants.FIELD_SOURCE);
+        int sourceFieldNumber = getSourceFieldNumber();
+        String[] sourceValues = new String[sourceFieldNumber];
+        for (int i = 0; i < sourceFieldNumber; i++) {
+            sourceValues[i] = doc.get(getSourceFieldName(i));
+        }
+        if(sourceValues.length > 0) {
+            this.contents = StringUtils.join(sourceValues, "");
+        }
         this.hash = doc.get(Constants.FIELD_FILE_HASH);
         this.codeOwner = doc.get(Constants.FIELD_CODE_OWNER);
         this.language = doc.get(Constants.FIELD_LANGUAGE);
@@ -152,15 +165,30 @@ public final class SourceFile extends Searchable {
         document.add(new StringField(Constants.FIELD_FILE_LOCATION, this.getLocation(),  Field.Store.YES));
 
         if(StringUtils.isNotBlank(this.getContents())) {
-            byte[] bytes = this.getContents().getBytes(StandardCharsets.UTF_8);
-            String source;
-            if (bytes.length < 32766) {
-                source = StringUtils.abbreviate(this.getContents(), 32766);
+            String sourceContent = this.getContents();
+            // 32766 是lucene keyword最大支持长度
+            if (sourceContent.length() < 32766) {
+                String source = sourceContent;
+                document.add(new TextField(getSourceFieldName(0), source , Field.Store.YES));
             } else {
-                source = new String(bytes, 0, 32766, StandardCharsets.UTF_8);
-                source = StringUtils.abbreviate(source, source.length() - 3);
+                // Integer.MAX_VALUE 是lucene Array 最大长度
+                for (int offset = 0, index = 0; ; ) {
+                    // 判断是否到退出条件
+                    if(offset >= sourceContent.length()) {
+                        break;
+                    }
+                    if(index >= getSourceFieldNumber()) {
+                        log.warn("{}:{}'s source field number exceed config {}, will be truncated" ,this.repository.name, this.getLocation(), getSourceFieldNumber() );
+                        break;
+                    }
+                    // 添加文档，每个字段最大32766长度
+                    String source = StringUtils.substring(sourceContent, offset, offset + 32766);
+                    document.add(new TextField(getSourceFieldName(index), source , Field.Store.YES));
+                    // 增加offset和index，继续下一次循环
+                    offset += 32766;
+                    index++;
+                }
             }
-            document.add(new TextField(Constants.FIELD_SOURCE, source , Field.Store.YES));
             //文件属性
             document.add(new StoredField(Constants.FIELD_FILE_HASH, this.getHash()));
         }

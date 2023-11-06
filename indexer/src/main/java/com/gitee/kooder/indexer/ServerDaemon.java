@@ -29,6 +29,7 @@ public class ServerDaemon implements Daemon {
     private final static Logger log = LoggerFactory.getLogger(ServerDaemon.class);
 
     private FetchTaskThread fetchTaskThread;
+    private GitlabIndexThread gitlabIndexThread;
 
     public ServerDaemon() {}
 
@@ -46,11 +47,13 @@ public class ServerDaemon implements Daemon {
     @Override
     public void init(DaemonContext dc) {
         this.fetchTaskThread = new FetchTaskThread();
+        this.gitlabIndexThread = new GitlabIndexThread();
     }
 
     @Override
     public void start() {
         this.fetchTaskThread.start();
+        this.gitlabIndexThread.start();
     }
 
     @Override

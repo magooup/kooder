@@ -15,8 +15,13 @@
  */
 package com.gitee.kooder.query;
 
+import static com.gitee.kooder.utils.SourceFieldUtils.getSourceFieldName;
+
 import com.gitee.kooder.core.AnalyzerFactory;
 import com.gitee.kooder.core.Constants;
+import com.gitee.kooder.core.KooderConfig;
+import com.gitee.kooder.utils.SourceFieldUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
@@ -59,11 +64,14 @@ public class CodeQuery extends QueryBase {
         String[] tokens = AnalyzerFactory.getCodeAnalyzer().tokens(q).stream().toArray(String[]::new);
 
         Query fileNameQuery = createPhraseQuery(Constants.FIELD_FILE_NAME, tokens, 1);//new PhraseQuery(1, Constants.FIELD_FILE_NAME, tokens);
-        Query sourceQuery = createPhraseQuery(Constants.FIELD_SOURCE, tokens, 5);//new PhraseQuery(5, Constants.FIELD_SOURCE, tokens);
-
         //make up query
         builder.add(new BoostQuery(fileNameQuery, 10.0f), BooleanClause.Occur.SHOULD);
-        builder.add(sourceQuery, BooleanClause.Occur.SHOULD);
+
+        int sourceFileNumber = SourceFieldUtils.getSourceFieldNumber();
+        for (int i = 0; i < sourceFileNumber; i++) {
+            Query sourceQuery = createPhraseQuery(getSourceFieldName(i), tokens, 5);//new PhraseQuery(5, Constants.FIELD_SOURCE, tokens);
+            builder.add(sourceQuery, BooleanClause.Occur.SHOULD);
+        }
 
         return builder.setMinimumNumberShouldMatch(1).build();
     }

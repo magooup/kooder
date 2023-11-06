@@ -73,7 +73,7 @@ public class FetchTaskThread extends Thread {
                             TaxonomyWriter taxonomyWriter = StorageFactory.getTaxonomyWriter(type))
                         {
                             //如果 tasks_per_thread < 0 ，则单线程处理
-                            int threshold = (tasks_per_thread>0)?tasks_per_thread:tasks.size();
+                            int threshold = (tasks_per_thread > 0) ? tasks_per_thread : tasks.size();
                             long startTime = System.currentTimeMillis();
                             BatchTaskRunner.execute(tasks, threshold, list -> handleTasks(list, writer, taxonomyWriter));
                             log.info("{} tasks<{}> finished in {} ms", tasks.size(), type, System.currentTimeMillis() - startTime);
@@ -130,24 +130,28 @@ public class FetchTaskThread extends Thread {
             FileTraveler fileTraveler = new CodeFileTraveler(writer, taxonomyWriter);
             for(Searchable obj : task.getObjects()) {
                 CodeRepository newRepo = (CodeRepository)obj;
-                //Read saved CodeRepository from persistent storage
-                CodeRepository repo = RepositoryManager.INSTANCE.get(newRepo.getId());
-                if (repo != null) {
-                    if(StringUtils.isNotBlank(newRepo.getName()))
-                        repo.setName(newRepo.getName());
-                    if(StringUtils.isNotBlank(newRepo.getScm()))
-                        repo.setScm(newRepo.getScm());
-                    if(StringUtils.isNotBlank(newRepo.getUrl()))
-                        repo.setUrl(newRepo.getUrl());
-                    if(StringUtils.isNotBlank(newRepo.getVender()))
-                        repo.setVender(newRepo.getVender());
-                } else {
-                    repo = newRepo;
+                try {
+                    //Read saved CodeRepository from persistent storage
+                    CodeRepository repo = RepositoryManager.INSTANCE.get(newRepo.getId());
+                    if (repo != null) {
+                        if(StringUtils.isNotBlank(newRepo.getName()))
+                            repo.setName(newRepo.getName());
+                        if(StringUtils.isNotBlank(newRepo.getScm()))
+                            repo.setScm(newRepo.getScm());
+                        if(StringUtils.isNotBlank(newRepo.getUrl()))
+                            repo.setUrl(newRepo.getUrl());
+                        if(StringUtils.isNotBlank(newRepo.getVender()))
+                            repo.setVender(newRepo.getVender());
+                    } else {
+                        repo = newRepo;
+                    }
+                    //pull repository from remote and build index for it
+                    RepositoryFactory.getProvider(repo.getScm()).pull(repo, fileTraveler);
+                    //write repository status to persistent storage
+                    RepositoryManager.INSTANCE.save(repo);
+                } catch (Throwable e) {
+                    log.error("Failed to add or update code-repository id = " + newRepo.getId(), e);
                 }
-                //pull repository from remote and build index for it
-                RepositoryFactory.getProvider(repo.getScm()).pull(repo, fileTraveler);
-                //write repository status to persistent storage
-                RepositoryManager.INSTANCE.save(repo);
             }
             break;
 

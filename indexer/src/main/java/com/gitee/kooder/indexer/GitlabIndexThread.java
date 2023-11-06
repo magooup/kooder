@@ -167,7 +167,7 @@ public class GitlabIndexThread extends Thread {
                 repo.setLicense(this.selectLang(langs));
             }catch(Exception e){
                 //some gitlab version didn't supply language api
-                log.error("Failed to get project language: " + p, e);
+                log.warn("Failed to get project language: " + p);
             }
             //write to lucene index
             QueueTask.add(Constants.TYPE_REPOSITORY, repo);
@@ -176,7 +176,12 @@ public class GitlabIndexThread extends Thread {
             codes.setEnterprise(0); //Gitlab doesn't support enterprise
             codes.setId(p.getId());
             codes.setScm(CodeRepository.SCM_GIT);
-            codes.setName(p.getName());
+            if(StringUtils.isNotBlank(p.getNameWithNamespace())) {
+                // Gitlab 支持仓库重名和fork
+                codes.setName(p.getNameWithNamespace().replaceAll(" ",""));
+            } else {
+                codes.setName(p.getName());
+            }
             codes.setUrl(p.getWebUrl());
             codes.setVender(Constants.GITLAB);
             //write to lucene index

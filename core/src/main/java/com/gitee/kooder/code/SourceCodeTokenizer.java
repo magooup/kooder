@@ -34,7 +34,7 @@ import java.util.List;
 public class SourceCodeTokenizer extends Tokenizer {
 
     private final static String separatorChars = " ~!@#$%^&*()-_+[]{}?/\\<>.:;,'\"\r\n\t";
-    private final static String uselessChars = "\r\n\t "; //{}()[];,
+    private final static String uselessChars = "{}()[];,.\r\n\t "; //{}()[];,
 
     private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
     private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
@@ -167,7 +167,7 @@ public class SourceCodeTokenizer extends Tokenizer {
      * @throws IOException
      */
     public static void main(String[] args) throws IOException {
-        String text = "hello你好";
+        String text = "authService - updateUserProfile";
 
         Analyzer analyzer = new Analyzer() {
             @Override
